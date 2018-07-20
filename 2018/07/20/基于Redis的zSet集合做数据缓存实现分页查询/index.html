@@ -6,20 +6,22 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="http://liyuanjun.xyz">
-  <title>基于Redis的zSet集合做数据缓存实现分页查询* | 飘来荡去</title>
+  <title>基于Redis的zSet集合做数据缓存实现分页查询 | 飘来荡去</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="一、Redis数据结构介绍   结构类型 结构存储的值 结构的读写能力         String 可以是字符串、整数或者浮点数 对整个字符串或者字符串的其中一部分执行操作；对象和浮点数执行自增(increment)或者自减(decrement)   List 一个链表，链表上的每个节点都包含了一个字符串 从链表的两端推入或者弹出元素；根据偏移量对链表进行修剪(trim)；读取单个或者多个元素">
 <meta name="keywords" content="Redis">
 <meta property="og:type" content="article">
-<meta property="og:title" content="基于Redis的zSet集合做数据缓存实现分页查询*">
+<meta property="og:title" content="基于Redis的zSet集合做数据缓存实现分页查询">
 <meta property="og:url" content="http://liyuanjun.xyz/2018/07/20/基于Redis的zSet集合做数据缓存实现分页查询/index.html">
 <meta property="og:site_name" content="飘来荡去">
 <meta property="og:description" content="一、Redis数据结构介绍   结构类型 结构存储的值 结构的读写能力         String 可以是字符串、整数或者浮点数 对整个字符串或者字符串的其中一部分执行操作；对象和浮点数执行自增(increment)或者自减(decrement)   List 一个链表，链表上的每个节点都包含了一个字符串 从链表的两端推入或者弹出元素；根据偏移量对链表进行修剪(trim)；读取单个或者多个元素">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-07-20T03:51:08.461Z">
+<meta property="og:image" content="https://image-1255440489.cos.ap-chengdu.myqcloud.com/643689034214345247.jpg">
+<meta property="og:updated_time" content="2018-07-20T03:53:51.226Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="基于Redis的zSet集合做数据缓存实现分页查询*">
+<meta name="twitter:title" content="基于Redis的zSet集合做数据缓存实现分页查询">
 <meta name="twitter:description" content="一、Redis数据结构介绍   结构类型 结构存储的值 结构的读写能力         String 可以是字符串、整数或者浮点数 对整个字符串或者字符串的其中一部分执行操作；对象和浮点数执行自增(increment)或者自减(decrement)   List 一个链表，链表上的每个节点都包含了一个字符串 从链表的两端推入或者弹出元素；根据偏移量对链表进行修剪(trim)；读取单个或者多个元素">
+<meta name="twitter:image" content="https://image-1255440489.cos.ap-chengdu.myqcloud.com/643689034214345247.jpg">
   
     <link rel="alternative" href="/atom.xml" title="飘来荡去" type="application/atom+xml">
   
@@ -148,7 +150,7 @@
         
   
     <h1 class="article-title" itemprop="name">
-      基于Redis的zSet集合做数据缓存实现分页查询*
+      基于Redis的zSet集合做数据缓存实现分页查询
     </h1>
   
 
@@ -208,12 +210,9 @@
 </tbody>
 </table>
 <h1 id="二、需求分析"><a href="#二、需求分析" class="headerlink" title="二、需求分析"></a>二、需求分析</h1><h2 id="1-场景描述"><a href="#1-场景描述" class="headerlink" title="1.场景描述"></a>1.场景描述</h2><hr>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一开始分页是通过每次请求数据库获取数据，然后再交给视图显示。现在假设数据量庞大，每回都请求数据库的损耗比较大，所以通过Redis来进行查询优化。当第一次从数据库中请求到数据后，就把数据存储到Redis中，下次访问数据时先从缓存中查找，找不到的话再去数据库中查找。<a id="more"></a>  </p>
-<h2 id="nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-所以，当进行CRUD抽插数据库时，先对缓存进行抽插，然后再对数据库中的信息进行维护。"><a href="#nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-所以，当进行CRUD抽插数据库时，先对缓存进行抽插，然后再对数据库中的信息进行维护。" class="headerlink" title="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;所以，当进行CRUD抽插数据库时，先对缓存进行抽插，然后再对数据库中的信息进行维护。"></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;所以，当进行CRUD抽插数据库时，先对缓存进行抽插，然后再对数据库中的信息进行维护。</h2><h2 id="2-流程图"><a href="#2-流程图" class="headerlink" title="2.流程图"></a>2.流程图</h2><hr>
-<p>![</p>
-<h2 id="643689034214345247-https-image-1255440489-cos-ap-chengdu-myqcloud-com-643689034214345247-jpg"><a href="#643689034214345247-https-image-1255440489-cos-ap-chengdu-myqcloud-com-643689034214345247-jpg" class="headerlink" title="643689034214345247](https://image-1255440489.cos.ap-chengdu.myqcloud.com/643689034214345247.jpg )"></a>643689034214345247](<a href="https://image-1255440489.cos.ap-chengdu.myqcloud.com/643689034214345247.jpg" target="_blank" rel="noopener">https://image-1255440489.cos.ap-chengdu.myqcloud.com/643689034214345247.jpg</a> )</h2><h2 id="3-数据结构选择"><a href="#3-数据结构选择" class="headerlink" title="3.数据结构选择"></a>3.数据结构选择</h2><hr>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;通过比较不同数据结构的使用场景后，发现Zset结构正是我们想要的缓存类型。我们把分数score设置为Category的主键,value则存放序列化后的Category对象，redis的数据会根据socre自动排序，我们只需要对redis进行新增、删除的操作就行了（修改可以先删除再新增）。  </p>
-<h2 id="nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-如何实现分页？将SET里面的集合根据Score进行排序（逆序），然后指定start和count，就可以实现分页查询了。"><a href="#nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-如何实现分页？将SET里面的集合根据Score进行排序（逆序），然后指定start和count，就可以实现分页查询了。" class="headerlink" title="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;如何实现分页？将SET里面的集合根据Score进行排序（逆序），然后指定start和count，就可以实现分页查询了。"></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;如何实现分页？将SET里面的集合根据Score进行排序（逆序），然后指定start和count，就可以实现分页查询了。</h2><hr>
+<h2 id="nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-一开始分页是通过每次请求数据库获取数据，然后再交给视图显示。现在假设数据量庞大，每回都请求数据库的损耗比较大，所以通过Redis来进行查询优化。当第一次从数据库中请求到数据后，就把数据存储到Redis中，下次访问数据时先从缓存中查找，找不到的话再去数据库中查找。所以，当进行CRUD抽插数据库时，先对缓存进行抽插，然后再对数据库中的信息进行维护。"><a href="#nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-一开始分页是通过每次请求数据库获取数据，然后再交给视图显示。现在假设数据量庞大，每回都请求数据库的损耗比较大，所以通过Redis来进行查询优化。当第一次从数据库中请求到数据后，就把数据存储到Redis中，下次访问数据时先从缓存中查找，找不到的话再去数据库中查找。所以，当进行CRUD抽插数据库时，先对缓存进行抽插，然后再对数据库中的信息进行维护。" class="headerlink" title="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一开始分页是通过每次请求数据库获取数据，然后再交给视图显示。现在假设数据量庞大，每回都请求数据库的损耗比较大，所以通过Redis来进行查询优化。当第一次从数据库中请求到数据后，就把数据存储到Redis中，下次访问数据时先从缓存中查找，找不到的话再去数据库中查找。所以，当进行CRUD抽插数据库时，先对缓存进行抽插，然后再对数据库中的信息进行维护。"></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一开始分页是通过每次请求数据库获取数据，然后再交给视图显示。现在假设数据量庞大，每回都请求数据库的损耗比较大，所以通过Redis来进行查询优化。当第一次从数据库中请求到数据后，就把数据存储到Redis中，下次访问数据时先从缓存中查找，找不到的话再去数据库中查找。<a id="more"></a>所以，当进行CRUD抽插数据库时，先对缓存进行抽插，然后再对数据库中的信息进行维护。</h2><h2 id="2-流程图"><a href="#2-流程图" class="headerlink" title="2.流程图"></a>2.流程图</h2><hr>
+<h2 id=""><a href="#" class="headerlink" title=""></a><img src="https://image-1255440489.cos.ap-chengdu.myqcloud.com/643689034214345247.jpg" alt="643689034214345247"></h2><h2 id="3-数据结构选择"><a href="#3-数据结构选择" class="headerlink" title="3.数据结构选择"></a>3.数据结构选择</h2><hr>
+<h2 id="nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-通过比较不同数据结构的使用场景后，发现Zset结构正是我们想要的缓存类型。我们把分数score设置为Category的主键-value则存放序列化后的Category对象，redis的数据会根据socre自动排序，我们只需要对redis进行新增、删除的操作就行了（修改可以先删除再新增）。如何实现分页？将SET里面的集合根据Score进行排序（逆序），然后指定start和count，就可以实现分页查询了。"><a href="#nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-通过比较不同数据结构的使用场景后，发现Zset结构正是我们想要的缓存类型。我们把分数score设置为Category的主键-value则存放序列化后的Category对象，redis的数据会根据socre自动排序，我们只需要对redis进行新增、删除的操作就行了（修改可以先删除再新增）。如何实现分页？将SET里面的集合根据Score进行排序（逆序），然后指定start和count，就可以实现分页查询了。" class="headerlink" title="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;通过比较不同数据结构的使用场景后，发现Zset结构正是我们想要的缓存类型。我们把分数score设置为Category的主键,value则存放序列化后的Category对象，redis的数据会根据socre自动排序，我们只需要对redis进行新增、删除的操作就行了（修改可以先删除再新增）。如何实现分页？将SET里面的集合根据Score进行排序（逆序），然后指定start和count，就可以实现分页查询了。"></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;通过比较不同数据结构的使用场景后，发现Zset结构正是我们想要的缓存类型。我们把分数score设置为Category的主键,value则存放序列化后的Category对象，redis的数据会根据socre自动排序，我们只需要对redis进行新增、删除的操作就行了（修改可以先删除再新增）。如何实现分页？将SET里面的集合根据Score进行排序（逆序），然后指定start和count，就可以实现分页查询了。</h2><hr>
 <h1 id="三、思路分析"><a href="#三、思路分析" class="headerlink" title="三、思路分析"></a>三、思路分析</h1><h2 id="框架采用springboot，而且所有请求访问都是RESTful风格的。"><a href="#框架采用springboot，而且所有请求访问都是RESTful风格的。" class="headerlink" title="框架采用springboot，而且所有请求访问都是RESTful风格的。"></a>框架采用springboot，而且所有请求访问都是RESTful风格的。</h2><hr>
 <h2 id="1-分页数据查询（重点）：findAll-int-start-int-size"><a href="#1-分页数据查询（重点）：findAll-int-start-int-size" class="headerlink" title="1.分页数据查询（重点）：findAll(int start,int size)"></a>1.分页数据查询（重点）：findAll(int start,int size)</h2><hr>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;具体的分页查询策略如下：<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;当前页面显示的数据有两种状态：一种是从数据库中获取得到的（第一次访问该页面），另一种是从Redis中获取的缓存数据。<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;当用户第一次访问页面的时候，用户需要显示哪一页，才会查询对应的页面数据，不会有多余的查询操作。第一次查询是从数据库中获取，然后把数据放入Redis中以便下次访问相同页面时直接从缓存中获取。<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;那么，如何判断用户是否是第一次访问？那就根据Redis缓存中是否有相应的数据，没有的话说明是第一次访问，就需要从数据库中获取。  </p>
@@ -557,15 +556,15 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Bash</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">hexo</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Bash</a>
               </li>
              
               <li class="article-tag-list-item">
