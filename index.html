@@ -204,8 +204,7 @@
 </tr>
 </tbody>
 </table>
-<h1 id="二、需求分析"><a href="#二、需求分析" class="headerlink" title="二、需求分析"></a>二、需求分析</h1><h2 id="1-场景描述"><a href="#1-场景描述" class="headerlink" title="1.场景描述"></a>1.场景描述</h2><hr>
-<h2 id="nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-一开始分页是通过每次请求数据库获取数据，然后再交给视图显示。现在假设数据量庞大，每回都请求数据库的损耗比较大，所以通过Redis来进行查询优化。当第一次从数据库中请求到数据后，就把数据存储到Redis中，下次访问数据时先从缓存中查找，找不到的话再去数据库中查找。所以，当进行CRUD抽插数据库时，先对缓存进行抽插，然后再对数据库中的信息进行维护。"><a href="#nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-一开始分页是通过每次请求数据库获取数据，然后再交给视图显示。现在假设数据量庞大，每回都请求数据库的损耗比较大，所以通过Redis来进行查询优化。当第一次从数据库中请求到数据后，就把数据存储到Redis中，下次访问数据时先从缓存中查找，找不到的话再去数据库中查找。所以，当进行CRUD抽插数据库时，先对缓存进行抽插，然后再对数据库中的信息进行维护。" class="headerlink" title="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一开始分页是通过每次请求数据库获取数据，然后再交给视图显示。现在假设数据量庞大，每回都请求数据库的损耗比较大，所以通过Redis来进行查询优化。当第一次从数据库中请求到数据后，就把数据存储到Redis中，下次访问数据时先从缓存中查找，找不到的话再去数据库中查找。所以，当进行CRUD抽插数据库时，先对缓存进行抽插，然后再对数据库中的信息进行维护。"></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一开始分页是通过每次请求数据库获取数据，然后再交给视图显示。现在假设数据量庞大，每回都请求数据库的损耗比较大，所以通过Redis来进行查询优化。当第一次从数据库中请求到数据后，就把数据存储到Redis中，下次访问数据时先从缓存中查找，找不到的话再去数据库中查找。
+<h1 id="二、需求分析"><a href="#二、需求分析" class="headerlink" title="二、需求分析"></a>二、需求分析</h1><h2 id="1-场景描述"><a href="#1-场景描述" class="headerlink" title="1.场景描述"></a>1.场景描述</h2><p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一开始分页是通过每次请求数据库获取数据，然后再交给视图显示。现在假设数据量庞大，每回都请求数据库的损耗比较大，所以通过Redis来进行查询优化。当第一次从数据库中请求到数据后，就把数据存储到Redis中，下次访问数据时先从缓存中查找，找不到的话再去数据库中查找。
         
           <a class="article-more-a" href="/2018/07/20/基于Redis的zSet集合做数据缓存实现分页查询/#more">more >></a>
         
@@ -1008,11 +1007,11 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+                <a href="javascript:void(0)" class="js-tag color5">hexo</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hexo</a>
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
               <li class="article-tag-list-item">
