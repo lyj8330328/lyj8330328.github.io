@@ -16,12 +16,12 @@
 <meta property="og:site_name" content="飘来荡去">
 <meta property="og:description" content="一、Redis数据结构介绍   结构类型 结构存储的值 结构的读写能力         String 可以是字符串、整数或者浮点数 对整个字符串或者字符串的其中一部分执行操作；对象和浮点数执行自增(increment)或者自减(decrement)   List 一个链表，链表上的每个节点都包含了一个字符串 从链表的两端推入或者弹出元素；根据偏移量对链表进行修剪(trim)；读取单个或者多个元素">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="https://image-1255440489.cos.ap-chengdu.myqcloud.com/643689034214345247.jpg">
-<meta property="og:updated_time" content="2018-07-20T04:22:13.575Z">
+<meta property="og:image" content="https://image-1255440489.cos.ap-chengdu.myqcloud.com/Redis%E5%88%86%E9%A1%B5.png">
+<meta property="og:updated_time" content="2018-07-21T10:26:46.586Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="基于Redis的zSet集合做数据缓存实现分页查询">
 <meta name="twitter:description" content="一、Redis数据结构介绍   结构类型 结构存储的值 结构的读写能力         String 可以是字符串、整数或者浮点数 对整个字符串或者字符串的其中一部分执行操作；对象和浮点数执行自增(increment)或者自减(decrement)   List 一个链表，链表上的每个节点都包含了一个字符串 从链表的两端推入或者弹出元素；根据偏移量对链表进行修剪(trim)；读取单个或者多个元素">
-<meta name="twitter:image" content="https://image-1255440489.cos.ap-chengdu.myqcloud.com/643689034214345247.jpg">
+<meta name="twitter:image" content="https://image-1255440489.cos.ap-chengdu.myqcloud.com/Redis%E5%88%86%E9%A1%B5.png">
   
     <link rel="alternative" href="/atom.xml" title="飘来荡去" type="application/atom+xml">
   
@@ -211,17 +211,49 @@
 </table>
 <h1 id="二、需求分析"><a href="#二、需求分析" class="headerlink" title="二、需求分析"></a>二、需求分析</h1><h2 id="1-场景描述"><a href="#1-场景描述" class="headerlink" title="1.场景描述"></a>1.场景描述</h2><p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一开始分页是通过每次请求数据库获取数据，然后再交给视图显示。现在假设数据量庞大，每回都请求数据库的损耗比较大，所以通过Redis来进行查询优化。当第一次从数据库中请求到数据后，就把数据存储到Redis中，下次访问数据时先从缓存中查找，找不到的话再去数据库中查找。<a id="more"></a>所以，当进行CRUD抽插数据库时，先对缓存进行抽插，然后再对数据库中的信息进行维护。</p>
 <h2 id="2-流程图"><a href="#2-流程图" class="headerlink" title="2.流程图"></a>2.流程图</h2><hr>
-<h2 id=""><a href="#" class="headerlink" title=""></a><img src="https://image-1255440489.cos.ap-chengdu.myqcloud.com/643689034214345247.jpg" alt="643689034214345247"></h2><h2 id="3-数据结构选择"><a href="#3-数据结构选择" class="headerlink" title="3.数据结构选择"></a>3.数据结构选择</h2><p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;通过比较不同数据结构的使用场景后，发现Zset结构正是我们想要的缓存类型。我们把分数score设置为Category的主键,value则存放序列化后的Category对象，redis的数据会根据socre自动排序，我们只需要对redis进行新增、删除的操作就行了（修改可以先删除再新增）。如何实现分页？将SET里面的集合根据Score进行排序（逆序），然后指定start和count，就可以实现分页查询了。</p>
+<h2 id=""><a href="#" class="headerlink" title=""></a><img src="https://image-1255440489.cos.ap-chengdu.myqcloud.com/Redis%E5%88%86%E9%A1%B5.png" alt="Redis分页"></h2><h2 id="3-数据结构选择"><a href="#3-数据结构选择" class="headerlink" title="3.数据结构选择"></a>3.数据结构选择</h2><p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;通过比较不同数据结构的使用场景后，发现Zset结构正是我们想要的缓存类型。我们把分数score设置为Category的主键,value则存放序列化后的Category对象，redis的数据会根据socre自动排序，我们只需要对redis进行新增、删除的操作就行了（修改可以先删除再新增）。如何实现分页？将SET里面的集合根据Score进行排序（逆序），然后指定start和count，就可以实现分页查询了。</p>
 <h1 id="三、思路分析"><a href="#三、思路分析" class="headerlink" title="三、思路分析"></a>三、思路分析</h1><p>框架采用springboot，而且所有请求访问都是RESTful风格的。</p>
 <h2 id="1-分页数据查询（重点）：findAll-int-start-int-size"><a href="#1-分页数据查询（重点）：findAll-int-start-int-size" class="headerlink" title="1.分页数据查询（重点）：findAll(int start,int size)"></a>1.分页数据查询（重点）：findAll(int start,int size)</h2><hr>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;具体的分页查询策略如下：  </p>
+<h2 id="nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-具体的分页查询策略如下："><a href="#nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-具体的分页查询策略如下：" class="headerlink" title="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;具体的分页查询策略如下：  "></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;具体的分页查询策略如下：  </h2><hr>
+<p><font size="3" color="#ff9"><1>前提条件<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;需要保存在Redis中的数据有：Category所有对象，分页数，最后一页中的数据条数。何时将这些对象放入Redis中呢?Category对象在用户首次访问页面的时候，将对应页面数据访问缓存中，随之分页数也存入缓存中。最后一页的数据条数在用户访问到末页的时候存入。 </1></font></p>
+<h2 id="-1"><a href="#-1" class="headerlink" title=" "></a> </h2><hr>
+<p><font size="3" color="#af8"><2>准备工作  </2></font></p>
+<h2 id="nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-首先获取缓存中的三个变量：count—缓存中的数据量，pages—分页数，lastPage—最后一页的数据量。然后在Redis中对ZSet进行查询，在这里进行正序和逆序两次查询。假如分页数为5，则逆序第1页的数据就对应正序第5页的数据，通过比较正序和逆序获取数据量的大小和内容，来判断当前访问页的数据是从数据库中获取还是从Redis中获取。"><a href="#nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-nbsp-首先获取缓存中的三个变量：count—缓存中的数据量，pages—分页数，lastPage—最后一页的数据量。然后在Redis中对ZSet进行查询，在这里进行正序和逆序两次查询。假如分页数为5，则逆序第1页的数据就对应正序第5页的数据，通过比较正序和逆序获取数据量的大小和内容，来判断当前访问页的数据是从数据库中获取还是从Redis中获取。" class="headerlink" title="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;首先获取缓存中的三个变量：count—缓存中的数据量，pages—分页数，lastPage—最后一页的数据量。然后在Redis中对ZSet进行查询，在这里进行正序和逆序两次查询。假如分页数为5，则逆序第1页的数据就对应正序第5页的数据，通过比较正序和逆序获取数据量的大小和内容，来判断当前访问页的数据是从数据库中获取还是从Redis中获取。  "></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;首先获取缓存中的三个变量：count—缓存中的数据量，pages—分页数，lastPage—最后一页的数据量。然后在Redis中对ZSet进行查询，在这里进行正序和逆序两次查询。假如分页数为5，则逆序第1页的数据就对应正序第5页的数据，通过比较正序和逆序获取数据量的大小和内容，来判断当前访问页的数据是从数据库中获取还是从Redis中获取。  </h2><hr>
+<p><3>数据获取  </3></p>
+<ul>
+<li>IF<br>正序和逆序查询到数据量都为0，说明用户第一次访问列表页，则从数据库中读取对应页面的数据并放入Redis中。  </li>
+<li>ELSE  <ul>
+<li>IF：首先判断当前页是否是最后一页。因为到达最后一页有不同的方法：  <ul>
+<li>IF：用户从首页依次点击下一页进入末页。那么此时判断缓存中的数据量是否与最后一页的页码*pages+lastPage是否相等，如果相等则从ZSet的逆序序列中获取最后一页数据。  </li>
+<li>ELSE：用户直接点击末页进入最后一页。那么就从正序序列中获取最后一页数据。</li>
+<li>ELSE：从数据库中获取</li>
+</ul>
+</li>
+<li>ELSE：不是最后一页  <ul>
+<li>IF：正序和逆序中放的数据一样，则从缓存中获取。  </li>
+<li>ELSE：<ul>
+<li>IF：正序和逆序查询得到的数据刚好查一页<ul>
+<li>IF：逆向查询，正序序列中数据个数与lastPage相同，说明此页未加载到缓存中，需要从数据库中获取。</li>
+<li>ELSE：否则从正序序列中获取缓存数据</li>
+</ul>
+</li>
+<li>ELSE IF：从正序序列中获取数据，需要进行逆置。</li>
+<li>ELSE 从数据库中查询数据</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>注：  </p>
 <ul>
 <li>当前页面显示的数据有两种状态：一种是从数据库中获取得到的（第一次访问该页面），另一种是从Redis中获取的缓存数据。  </li>
 <li>当用户第一次访问页面的时候，用户需要显示哪一页，才会查询对应的页面数据，不会有多余的查询操作。第一次查询是从数据库中获取，然后把数据放入Redis中以便下次访问相同页面时直接从缓存中获取。</li>
 <li>那么，如何判断用户是否是第一次访问？那就根据Redis缓存中是否有相应的数据，没有的话说明是第一次访问，就需要从数据库中获取。   </li>
 </ul>
 <hr>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;场景分解： </p>
+<p><4>场景分解： </4></p>
 <ul>
 <li>当用户访问完第二页后，再点击上一页，那么上一页的数据就应该从Redis缓存中获取，因为在第一次从数据库中获取到数据后就把它存储到缓存当中了。所以通过判断当前redis中现有数据量和（请求页数x页长）的大小关系来判断是否可以从内存中获取数据。比如说现在请求第3页，那么缓存中必须至少有15条数据，否则还需从数据库中读取。但是也有例外，比如说最后一页的数据不满5条，那么（请求页数x页长）始终大于缓存中的数据量，所以在第一次从数据库中拉取最后一页数据的时候，就需要记录一下最后一页的数据条数，然后再增加一个判断条件，用来确定到底是从数据库中获取还是从缓存中获取。</li>
 </ul>
@@ -563,15 +595,11 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
           <ul class="article-tag-list" q-show="showTags">
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Git</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hexo</a>
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -580,6 +608,10 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Computer Tricks</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hexo</a>
               </li>
              
               <li class="article-tag-list-item">
